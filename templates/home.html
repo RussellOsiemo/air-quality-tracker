@@ -25,8 +25,8 @@
     <div id="myMap"></div>
     <script type="text/javascript">
         window.addEventListener("DOMContentLoaded", function () {
-            // Pick a predefined location of the maseno University.
-            map_center = [36.787, -1.292];
+            // Pick a predefined location of maseno university
+            map_center = [34.5, -0.2];
 
             // If the user grants permission when prompted, get the user's location.
             if (navigator.geolocation) {
@@ -43,13 +43,47 @@
                 }
             });
 
-            // When the map is ready, center the map on the user's location.
-            map.events.add('ready', function () {
-                map.setCamera({
-                    center: map_center,
-                    zoom: 5
-                })
+           // When the map is ready, center the map on the user's location.
+map.events.add('ready', function () {
+    // Declare a data source for the AQI data.
+    var datasource = new atlas.source.DataSource();
+    map.sources.add(datasource);
+
+    // Declare a function to update the AQI data.
+    function updateAQIData(e) {
+        // Get the current bounds on the screen.
+        bounds = map.getCamera().bounds
+
+        // Set the data source data to results of the AQI call.
+        // This is a feature collection that contains the AQI measurements.
+        fetch('./aqi?bounds=' + bounds)
+            .then(res => {
+                return res.json()
+            }).then(response => {
+                datasource.clear()
+                datasource.setShapes(response)
             })
+    }
+
+    // Add a bubble layer.
+    map.layers.add(new atlas.layer.BubbleLayer(datasource, null, {
+        radius: 10,
+        opacity: 0.5,
+        strokeOpacity: 0,
+        // Get the color from the color property.
+        color: ['get', 'color']
+    }));
+
+    // Handle any events that change the bounds of the map.
+    map.events.add('zoomend', updateAQIData)
+    map.events.add('dragend', updateAQIData)
+    map.events.add('pitchend', updateAQIData)
+
+    map.setCamera({
+        center: map_center,
+        zoom: 5
+    })
+})
         })
     </script>
 </body>
